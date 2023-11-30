@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import { BiSearchAlt } from 'react-icons/bi';
 import {
   SearchForm,
@@ -7,40 +7,36 @@ import {
   SearchbarHeader,
 } from './Searchbar.styled';
 
-export class Searchbar extends Component {
-  state = {
-    query: '',
+export const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const handleInputQueryChange = event => {
+    setQuery(event.target.value);
   };
 
-  handleInputQueryChange = event => {
-    this.setState({ query: event.target.value });
-  };
-
-  handleQueryFormSubmit = event => {
+  const handleQueryFormSubmit = event => {
     event.preventDefault();
 
-    this.props.onSubmit(this.state.query);
-    this.setState({ query: '' });
+    onSubmit(query);
+    setQuery('');
   };
 
-  render() {
-    return (
-      <SearchbarHeader>
-        <SearchForm onSubmit={this.handleQueryFormSubmit}>
-          <SearchFormButton type="submit">
-            <BiSearchAlt color="#252525" size="24" />
-          </SearchFormButton>
+  return (
+    <SearchbarHeader>
+      <SearchForm onSubmit={handleQueryFormSubmit}>
+        <SearchFormButton type="submit">
+          <BiSearchAlt color="#252525" size="24" />
+        </SearchFormButton>
 
-          <SearchFormInput
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            value={this.state.query}
-            onChange={this.handleInputQueryChange}
-          />
-        </SearchForm>
-      </SearchbarHeader>
-    );
-  }
-}
+        <SearchFormInput
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          value={query}
+          onChange={handleInputQueryChange}
+        />
+      </SearchForm>
+    </SearchbarHeader>
+  );
+};

@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Notify } from 'notiflix';
 import { Container } from './Container/Container.styled';
 import { Searchbar } from './Searchbar/Searchbar';
@@ -7,71 +7,61 @@ import { fetchImageGallery, PER_PAGE } from 'api/fetchImageGallery';
 import { LoadMoreButton } from './Button/Button';
 import { Loader } from './Loader/Loader';
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    page: 1,
-    isLoading: false,
-    isButtonHidden: true,
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isButtonHidden, setIsButtonHidden] = useState(true);
+
+  useEffect(() => {
+    if (query !== '') {
+      processImageGallery(query, page);
+    }
+  }, [query, page]);
+
+  const processImageGallery = async (query, page) => {
+    try {
+      setIsLoading(true);
+
+      const { hits, totalHits } = await fetchImageGallery(query, page);
+
+      setImages(prevImages => [...prevImages, ...hits]);
+      setIsButtonHidden(false);
+
+      if (page * PER_PAGE > totalHits) {
+        setIsButtonHidden(true);
+      }
+    } catch (error) {
+      Notify.failure(`Failure: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-
-    if (prevState.query !== query || prevState.page !== page) {
-      this.processImageGallery(query, page);
-    }
-  }
-
-  handleQueryFormSubmit = async query => {
+  const handleQueryFormSubmit = query => {
     if (query.trim() === '') {
       Notify.warning('You should enter your search query');
       return;
     }
 
-    this.setState({ query, page: 1, images: [] });
+    setQuery(query);
+    setPage(1);
+    setImages([]);
   };
 
-  handleLoadMoreBtnClick = async () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMoreBtnClick = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  processImageGallery = async (query, page) => {
-    try {
-      this.setState({ isLoading: true });
-
-      const { hits, totalHits } = await fetchImageGallery(query, page);
-
-      this.setState(prevState => ({
-        images: [...prevState.images, ...hits],
-        isButtonHidden: false,
-      }));
-
-      if (page * PER_PAGE > totalHits) {
-        this.setState({ isButtonHidden: true });
-      }
-    } catch (error) {
-      Notify.failure(`Failure: ${error.message}`);
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
-
-  render() {
-    const { images, isLoading, isButtonHidden } = this.state;
-
-    return (
-      <Container>
-        <Searchbar onSubmit={this.handleQueryFormSubmit} />
-        {Boolean(images.length) && <ImageGallery images={images} />}
-        {isLoading && <Loader />}
-        {!isButtonHidden && !isLoading && (
-          <LoadMoreButton onClick={this.handleLoadMoreBtnClick} />
-        )}
-      </Container>
-    );
-  }
-}
+  return (
+    <Container>
+      <Searchbar onSubmit={handleQueryFormSubmit} />
+      {Boolean(images.length) && <ImageGallery images={images} />}
+      {isLoading && <Loader />}
+      {!isButtonHidden && !isLoading && (
+        <LoadMoreButton onClick={handleLoadMoreBtnClick} />
+      )}
+    </Container>
+  );
+};
